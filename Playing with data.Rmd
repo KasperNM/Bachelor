@@ -1,0 +1,164 @@
+---
+title: "Work with data"
+author: "Kasper"
+date: "7/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#Libraries
+pacman::p_load(tidyverse, lme4)
+
+#Loading in the files
+logdata <- read_csv("log_data.csv")
+bpmdata <- read_csv("bpm.csv")
+storyratings <- read_csv(("story_ratings.csv"))
+
+#loading in sentida
+if(!require("devtools")) install.packages("devtools")
+
+devtools::install_github("Guscode/Sentida")
+
+library(Sentida)
+Sys.setlocale(category = "LC_ALL", locale = "UTF-8")
+#Test
+sentida("Et ægtepar på 33 og 36 år fra Morsø kommune kom den 26. September 2011 ud i et voldeligt skænderi på den fælles bopæl. Skænderiet startede på grund af uenighed om badning af det fælles barn. I følge den 33-årige kvindes forklaring blev hun udsat for kvælertag og fik hovedet slået mod en dørkarm. Den 36-årige ægtemand har forklaret, at uenigheden endte med, at hun angreb ham. Manden blev sigtet for vold.", output = "mean")
+
+#Make a function that puts the text in sentida
+funtext <- function(filename) {
+  filenamepath = paste("story_texts/", filename, sep = "")
+  file = read_file(filenamepath) 
+  Sentida_mean = sentida(file, output = "mean")
+  Sentida_total = sentida(file, output = "total")
+  labels = str_match(filenamepath, "story_texts/Fiction_story([0-9]+).txt")
+  story_num = as.numeric(labels[2])
+  output <- data.frame(story_num, Sentida_mean, Sentida_total)
+  }
+hej <- funtext("Fiction_story25.txt")
+
+hr = list.files(path = "story_texts/", pattern = "txt") %>% ## NB replace with your path to the files 
+    purrr::map_df(funtext)
+
+newdf <- merge(hr,logdata)
+
+nyfunct <- function(filename) {
+  filenamepath = paste("heartrate_data/", filename, sep = "")
+  file = read_csv(filenamepath, col_names = F)
+  labels = str_match(filenamepath, "heartrate_data/([0-9]+)_([a-zA-Z]+)_heartrate_resamp.csv")
+  Participant_num = labels[2]
+  output = as.data.frame(t(file))
+  names(output)[1] = labels[2]
+  output
+
+}
+
+hrdata = list.files(path = "heartrate_data/", pattern = "resamp.csv") %>% ## NB replace with your path to the files 
+    purrr::map_dfc(nyfunct)
+
+ok <- nyfunct("001_RHN_heartrate_resamp.csv")
+
+rlang::last_error()
+```
+
+## R Markdown
+
+```{r}
+#statistical tests
+logdata$story_num <-  as.numeric(logdata$story_num)
+str(logdata)
+#Making fict/fact column 0s and 1s
+logdata$Fict1Fact2 <- logdata$Fict1Fact2 - 1
+logdata$Fict1Fact2 <- as.factor(logdata$Fict1Fact2)
+
+
+#model testing response as a function of whether the story is fictional or fact
+m1 <- lmerTest::lmer(data = logdata, response ~ Fict1Fact2 + (1|ID))
+summary(m1)
+#There is a significant difference between fict and fact 
+#logistic regression
+m2 <- lme4::glmer(Fict1Fact2 ~ response + (1|ID),data =
+logdata, family = binomial)
+
+#Model testing by sentiment mean
+m3 <- lmerTest::lmer(data = newdf, response ~ Sentida_mean + (1|ID))
+
+summary(m3)
+
+m4 <- lmerTest::lmer(data = newdf, response ~ Sentida_mean + Fict1Fact2 + (1|ID))
+
+m5 <- lmerTest::lmer(data = newdf, response ~ Sentida_total + Fict1Fact2 + (1|ID))
+
+#Interaction effect
+m6 <- lmerTest::lmer(data = newdf, response ~ Sentida_mean * Fict1Fact2 + (1|ID))
+summary(m6)
+summary(m4)
+
+summary(m5)
+
+str(newdf)
+
+#data visualisation
+logdata %>% ggplot(aes(x = Fict1Fact2, y = response, color = ID)) +
+  geom_line()
+
+logdata %>% ggplot(aes(x = response, y = Fict1Fact2)) +
+  geom_point(alpha = 0.2, shape = 1) +
+  geom_smooth(method = 'lm')
+str(logdata)
+```
+```{r}
+#Heartrate & Resp data
+hrdf <- read_csv("heartrate_data/001_RHN_heartrate_bpm.csv", col_names = F)
+hrdf <- as.data.frame(t(hrdf))
+
+odf <- read_csv("heartrate_data/001_RHN_heartrate_onsets.csv", col_names = F)
+odf <- read_csv("heartrate_data/001_RHN_heartrate_.csv", col_names = F)
+
+res <- read_csv("heartrate_data/001_RHN_heartrate_resamp.csv", col_names = F)
+res1 <- read_csv("heartrate_data/002_GS_heartrate_resamp.csv", col_names = F)
+res2 <- read_csv("heartrate_data/003_LMB_heartrate_resamp.csv", col_names = F)
+res <- as.data.frame(t(res))
+
+respts <- read_csv("respiration_data/001_RHN_resp_ts.csv", col_names = F)
+
+respres <- read_csv("respiration_data/001_RHN_ts_resamp.csv", col_names = F)
+
+ts.plot(respts)
+
+#Load in of HR onsets
+files <- list.files(path = "heartrate_data",     #PUT THE NAME OF YOUR FOLDER WITH DATA in the quotes, it also might need '/' in the end, experiment with it :)
+                    pattern = "resamp.csv",  #everything that contains '.csv' in its name will be listed
+                    full.names = T)#makes it include directory path, so instead of 'logfile_1.csv' it will be 'data/logfile_1.csv')
+
+#read all the files into a tibble (a fancy df)
+resdf <- lapply(files, read_csv) %>%   # apply read_csv() to every element in files list and send the resulting tibbles to the next line
+  plyr::rbind.fill() 
+
+
+
+
+```
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
