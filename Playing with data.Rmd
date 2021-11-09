@@ -131,6 +131,7 @@ respres <- read_csv("respiration_data/001_RHN_ts_resamp.csv", col_names = F)
 ts.plot(respts)
 
 
+
 #Load in of HR onsets
 files <- list.files(path = "heartrate_data",     #PUT THE NAME OF YOUR FOLDER WITH DATA in the quotes, it also might need '/' in the end, experiment with it :)
                     pattern = "resamp.csv",  #everything that contains '.csv' in its name will be listed
