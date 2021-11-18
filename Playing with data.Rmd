@@ -62,7 +62,42 @@ hrdata = list.files(path = "heartrate_data/", pattern = "resamp.csv") %>% ## NB 
 
 ok <- nyfunct("001_RHN_heartrate_resamp.csv")
 
+#Creating z-scores
+hrdata$z <- (hrdata$`003` - mean(hrdata$`003`))/sd(hrdata$`003`)
+#filtering the dataframe from z-scores higher than 3 and lower than -3 which are co
+#nsidered outliers
+data_wool <- data %>% filter(data$z <= 3 | data$z <=-3)
+
+ts.plot(hrdata$`003`)
+
 rlang::last_error()
+
+scaledhrdata <- scale(hrdata)
+scaledhrdata <- as.data.frame(scaledhrdata)
+
+test1 <- scaledhrdata
+
+ok <- test1 %>% mean()
+
+for(col in 1:ncol(test1)) { # for-loop over columns
+  for( row in 2:nrow(test1)-1) { #for over rows
+    value = test1[row,col]
+    if(value > 3 | value < -3){
+      value <- mean(c(test1[row-1,col],test1[row+1,col]))
+      
+    }
+   
+  }
+}
+
+
+
+ts.plot(test1$`002`)
+
+str(test1)
+
+scaledhrdata <- replace()
+
 ```
 
 ## R Markdown
@@ -142,11 +177,118 @@ resdf <- lapply(files, read_csv) %>%   # apply read_csv() to every element in fi
   plyr::rbind.fill() 
 
 
-
+#h
 
 
 ```
 
+```{r}
+#heartrate seperated by story
+
+
+meanstory1 <- mean(story1$`002`)
+
+funky <- function(column){
+  meanC = mean(column)
+  SDC = sd(column)
+  totalmean = 
+ }
+
+story1 <- hrdata[26:373,]
+story2 <- hrdata[500:1045,]
+story3 <- hrdata[1171:1440,]
+story4 <- hrdata[1556:1899,]
+story5 <- hrdata[2025:2297,]
+story6 <- hrdata[2423:2653,]
+story7 <- hrdata[2779:3135,]
+story8 <- hrdata[3261:3627,]
+story9 <- hrdata[3753:4010,]
+story10 <- hrdata[4136:4294,]
+story11 <- hrdata[4420:4581,]
+story12 <- hrdata[4707:5004,]
+story13 <- hrdata[5131:5425,]
+story14 <- hrdata[5552:6035,]
+story15 <- hrdata[6161:6576,]
+story16 <- hrdata[6703:7098,]
+story17 <- hrdata[7225:7556,]
+story18 <- hrdata[7682:7940,]
+story19 <- hrdata[8066:8601,]
+story20 <- hrdata[8728:8969,]
+story21 <- hrdata[9095:9316,]
+story22 <- hrdata[9442:9902,]
+story23 <- hrdata[10028:10409,]
+story24 <- hrdata[10535:10803,]
+story25 <- hrdata[10930:11364,]
+story26 <- hrdata[11490:11735,]
+story27 <- hrdata[11862:12296,]
+story28 <- hrdata[12422:12694,]
+story29 <- hrdata[12820:13034,]
+story30 <- hrdata[13160:13462,]
+
+therealstory <- lapply()
+
+test1000 <- hrdata[1:1899,1]
+test1001 <- c(before1,actstory1,before2,actstory2,before3,actstory3,before4,actstory4)
+
+hrdata$con = NA
+for(i in 1:nrow(hrdata)) {
+  if (rownames(hrdata)[i] %in% rownames(story1)) {
+    print(row1)
+    hrdata$con[i] = 1
+  } else{
+    hrdata$con[i] = 0
+  }
+}
+
+for( row in 2:nrow(test1)-1) { #for over rows
+    value = test1[row,col]
+    if(value > 3 | value < -3){
+      value <- mean(c(test1[row-1,col],test1[row+1,col]))
+      
+    }
+   
+  }
+
+
+before1 <- rep(0,25)
+actstory1 <- rep(1,347)
+before2 <- rep(0,125)
+actstory2 <- rep(1,545)
+before3 <- rep(0,125)
+actstory3 <- rep(1,269)
+before4 <- rep(0,155)
+actstory4 <- rep(1,343)
+before5
+actstory5
+before6
+actstory6
+before7
+actstory7
+before8
+actstory8
+before9
+actstory9
+before10
+actstory10
+before11
+actstory11
+before12
+actstory12
+before13
+actstory13
+before14
+actstory14
+
+
+
+
+
+
+
+
+scaledstory1 <- (scale(story1))
+scaledstory1 <- as.data.frame(scaledstory1)
+```
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
