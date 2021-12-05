@@ -45,6 +45,10 @@ hr = list.files(path = "story_texts/", pattern = "txt") %>% ## NB replace with y
 #Merge it into logdata
 logdf <- merge(hr,logdata)
 
+
+#Sorting after storynumber
+hr <- hr[order(hr$story_num),]
+
 ```
 
 ```{r}
@@ -162,8 +166,195 @@ for(i in 1:nrow(scaledhrdata1)) {
   }
 }
 
-ts.plot(scaledhrdata1$`001`)
+#Make a contrast column where it puts the sentida value as contrast everytime a story is told and 0 when there is not
+for(i in 1:nrow(scaledhrdata1)) {
+  if (rownames(scaledhrdata1)[i] %in% rownames(story1)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[1]
+    scaledhrdata1$storynum[i] = 1
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story2)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[2]
+    scaledhrdata1$storynum[i] = 2
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story3)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[3]
+    scaledhrdata1$storynum[i] = 3
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story4)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[4]
+    scaledhrdata1$storynum[i] = 4
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story5)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[5]
+    scaledhrdata1$storynum[i] = 5
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story6)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[6]
+    scaledhrdata1$storynum[i] = 6
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story7)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[7]
+    scaledhrdata1$storynum[i] = 7
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story8)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[8]
+    scaledhrdata1$storynum[i] = 8
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story9)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[9]
+    scaledhrdata1$storynum[i] = 9
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story10)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[10]
+    scaledhrdata1$storynum[i] = 10
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story11)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[11]
+    scaledhrdata1$storynum[i] = 11
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story12)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[12]
+    scaledhrdata1$storynum[i] = 12
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story13)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[13]
+    scaledhrdata1$storynum[i] = 13
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story14)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[14]
+    scaledhrdata1$storynum[i] = 14
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story15)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[15]
+    scaledhrdata1$storynum[i] = 15
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story16)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[16]
+    scaledhrdata1$storynum[i] = 16
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story17)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[17]
+    scaledhrdata1$storynum[i] = 17
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story18)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[18]
+    scaledhrdata1$storynum[i] = 18
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story19)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[19]
+    scaledhrdata1$storynum[i] = 19
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story20)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[20]
+    scaledhrdata1$storynum[i] = 20
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story21)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[21]
+    scaledhrdata1$storynum[i] = 21
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story22)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[22]
+    scaledhrdata1$storynum[i] = 22
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story23)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[23]
+    scaledhrdata1$storynum[i] = 23
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story24)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[24]
+    scaledhrdata1$storynum[i] = 24
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story25)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[25]
+    scaledhrdata1$storynum[i] = 25
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story26)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[26]
+    scaledhrdata1$storynum[i] = 26
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story27)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[27]
+    scaledhrdata1$storynum[i] = 27
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story28)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[28]
+    scaledhrdata1$storynum[i] = 28
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story29)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[29]
+    scaledhrdata1$storynum[i] = 29
+  }
+  else if (rownames(scaledhrdata1)[i] %in% rownames(story30)) {
+    scaledhrdata1$sen[i] = hr$Sentida_mean[30]
+    scaledhrdata1$storynum[i] = 30
+  }
+  else {
+    scaledhrdata1$sen[i] = 0
+    scaledhrdata1$storynum[i] = 0
+  }
+}
 
+
+#models to see if it matters whether a story is told or not on the heartrate data
+m10 <- lm(scaledhrdata1$`001` ~ con, data = scaledhrdata1)
+m11 <- lm(scaledhrdata1$`002` ~ con, data = scaledhrdata1)
+m12 <- lm(scaledhrdata1$`003` ~ con, data = scaledhrdata1)
+m13 <- lm(scaledhrdata1$`004` ~ con, data = scaledhrdata1)
+m14 <- lm(scaledhrdata1$`005` ~ con, data = scaledhrdata1)
+m15 <- lm(scaledhrdata1$`006` ~ con, data = scaledhrdata1)
+m16 <- lm(scaledhrdata1$`007` ~ con, data = scaledhrdata1)
+m17 <- lm(scaledhrdata1$`008` ~ con, data = scaledhrdata1)
+m18 <- lm(scaledhrdata1$`009` ~ con, data = scaledhrdata1)
+m19 <- lm(scaledhrdata1$`012` ~ con, data = scaledhrdata1)
+m20 <- lm(scaledhrdata1$`013` ~ con, data = scaledhrdata1)
+m21 <- lm(scaledhrdata1$`014` ~ con, data = scaledhrdata1)
+m22 <- lm(scaledhrdata1$`015` ~ con, data = scaledhrdata1)
+m23 <- lm(scaledhrdata1$`016` ~ con, data = scaledhrdata1)
+m24 <- lm(scaledhrdata1$`017` ~ con, data = scaledhrdata1)
+m25 <- lm(scaledhrdata1$`018` ~ con, data = scaledhrdata1)
+m26 <- lm(scaledhrdata1$`019` ~ con, data = scaledhrdata1)
+m27 <- lm(scaledhrdata1$`020` ~ con, data = scaledhrdata1)
+m28 <- lm(scaledhrdata1$`021` ~ con, data = scaledhrdata1)
+m29 <- lm(scaledhrdata1$`022` ~ con, data = scaledhrdata1)
+m30 <- lm(scaledhrdata1$`023` ~ con, data = scaledhrdata1)
+m31 <- lm(scaledhrdata1$`024` ~ con, data = scaledhrdata1)
+m32 <- lm(scaledhrdata1$`025` ~ con, data = scaledhrdata1)
+m33 <- lm(scaledhrdata1$`026` ~ con, data = scaledhrdata1)
+m34 <- lm(scaledhrdata1$`027` ~ con, data = scaledhrdata1)
+m35 <- lm(scaledhrdata1$`028` ~ con, data = scaledhrdata1)
+m36 <- lm(scaledhrdata1$`029` ~ con, data = scaledhrdata1)
+m37 <- lm(scaledhrdata1$`030` ~ con, data = scaledhrdata1)
+m38 <- lm(scaledhrdata1$`031` ~ con, data = scaledhrdata1)
+m39 <- lm(scaledhrdata1$`033` ~ con, data = scaledhrdata1)
+m40 <- lm(scaledhrdata1$`034` ~ con, data = scaledhrdata1)
+m41 <- lm(scaledhrdata1$`035` ~ con, data = scaledhrdata1)
+m42 <- lm(scaledhrdata1$`036` ~ con, data = scaledhrdata1)
+m43 <- lm(scaledhrdata1$`037` ~ con, data = scaledhrdata1)
+m44 <- lm(scaledhrdata1$`038` ~ con, data = scaledhrdata1)
+m45 <- lm(scaledhrdata1$`039` ~ con, data = scaledhrdata1)
+m46 <- lm(scaledhrdata1$`040` ~ con, data = scaledhrdata1)
+
+dfbeta <- merge(m10$coefficients,m11$coefficients,m12$coefficients)
+
+#extracting betavalues from the models
+betavalues <- c(m10$coefficients["con"], m11$coefficients["con"], m12$coefficients["con"], m13$coefficients["con"], m14$coefficients["con"], m15$coefficients["con"], m16$coefficients["con"], m17$coefficients["con"], m18$coefficients["con"], m19$coefficients["con"], m20$coefficients["con"], m21$coefficients["con"], m22$coefficients["con"], m23$coefficients["con"], m24$coefficients["con"], m25$coefficients["con"], m26$coefficients["con"], m27$coefficients["con"], m28$coefficients["con"], m29$coefficients["con"], m30$coefficients["con"], m31$coefficients["con"], m32$coefficients["con"], m33$coefficients["con"], m34$coefficients["con"], m35$coefficients["con"], m36$coefficients["con"], m37$coefficients["con"], m38$coefficients["con"], m39$coefficients["con"], m40$coefficients["con"], m41$coefficients["con"], m42$coefficients["con"], m43$coefficients["con"], m44$coefficients["con"], m45$coefficients["con"], m46$coefficients["con"])
+betavalues <- as.data.frame(betavalues)
+
+#t.testing if there is an effect
+t.test(betavalues$betavalues)
+```
+
+```{r}
+#Dividing the dataset into participants having the same conditions
+library(dplyr)
+factsubset <- scaledhrdata1 %>% 
+  select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`,`040`)
+
+fictsubset <- scaledhrdata1 %>% 
+  select(`002`,`004`, `006`, `008`, `012`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`)
+```
+
+```{r}
 
 ```
 
