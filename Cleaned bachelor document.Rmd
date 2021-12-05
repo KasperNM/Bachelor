@@ -88,19 +88,32 @@ ok <- nyfunct("001_RHN_heartrate_resamp.csv")
 hrdata1 = list.files(path = "heartrate_data/", pattern = "resamp.csv") %>% ## NB replace with your path to the files 
     purrr::map_dfc(nyfunct)
 
+for(col in 1:ncol(hrdata1)){
+  colmean <-  mean(hrdata1[,col])
+  for(row in 1:nrow(hrdata1)){
+    value = hrdata1[row,col]
+    if(value == 0.00){
+      hrdata1[row,col] <- colmean
+    }
+  }
+ 
+}
+
+
 #Scaling hrdata so it gets easier to compare
+
 scaledhrdata1 <- scale(hrdata1)
 scaledhrdata1 <- as.data.frame(scaledhrdata1)
 
 #Making a for-loop that replaces outliers with the mean between the datapoint prior and after the data point
+
 for(col in 1:ncol(scaledhrdata1)) { # for-loop over columns
-  for( row in 2:nrow(scaledhrdata1)-1) { #for over rows
+  for(row in 2:nrow(scaledhrdata1)-1) { #for over rows
     value = scaledhrdata1[row,col]
     if(value > 3 | value < -3){
       value <- mean(c(scaledhrdata1[row-1,col],scaledhrdata1[row+1,col]))
       
     }
-   
   }
 }
 #note: if many outliers in a row = the mean between prior and the datapoint after might not be the best solution
@@ -148,6 +161,8 @@ for(i in 1:nrow(scaledhrdata1)) {
     scaledhrdata1$con[i] = 0
   }
 }
+
+ts.plot(scaledhrdata1$`001`)
 
 
 ```
