@@ -1,0 +1,173 @@
+---
+title: "Cleaned bachelor document"
+author: "Kasper"
+date: "12/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#Libraries
+pacman::p_load(tidyverse, lme4)
+
+#Loading in the files
+logdata <- read_csv("log_data.csv")
+bpmdata <- read_csv("bpm.csv")
+storyratings <- read_csv(("story_ratings.csv"))
+
+#loading in sentida
+if(!require("devtools")) install.packages("devtools")
+
+devtools::install_github("Guscode/Sentida")
+
+library(Sentida)
+Sys.setlocale(category = "LC_ALL", locale = "UTF-8")
+
+#Make a function that puts the text into sentida-dictionary
+funtext <- function(filename) {
+  filenamepath = paste("story_texts/", filename, sep = "")
+  file = read_file(filenamepath) 
+  Sentida_mean = sentida(file, output = "mean")
+  Sentida_total = sentida(file, output = "total")
+  labels = str_match(filenamepath, "story_texts/Fiction_story([0-9]+).txt")
+  story_num = as.numeric(labels[2])
+  output <- data.frame(story_num, Sentida_mean, Sentida_total)
+  }
+
+#Puts all the sentida scores into a dataframe
+hr = list.files(path = "story_texts/", pattern = "txt") %>% ## NB replace with your path to the files 
+    purrr::map_df(funtext)
+
+#Merge it into logdata
+logdf <- merge(hr,logdata)
+
+```
+
+```{r}
+#Statistical models on behavioral data
+str(logdf)
+#Making the fict/fact condition as factor and 0 and 1s
+logdata$Fict1Fact2 <- logdata$Fict1Fact2 - 1
+logdata$Fict1Fact2 <- as.factor(logdata$Fict1Fact2)
+
+#model testing response as a function of whether the story is fictional or fact
+m1 <- lmerTest::lmer(data = logdf, response ~ Fict1Fact2 + (1|ID))
+summary(m1)
+#There is a significant difference between fict and fact
+
+#Simple model testing if sentida mean predicts response
+m3 <- lmerTest::lmer(data = newdf, response ~ Sentida_mean + (1|ID))
+summary(m3)
+
+#Model with both predictors
+m4 <- lmerTest::lmer(data = newdf, response ~ Sentida_mean + Fict1Fact2 + (1|ID))
+summary(m4)
+
+```
+
+```{r}
+#Heartrate data
+#Function that loads in heartrate data
+nyfunct <- function(filename) {
+  filenamepath = paste("heartrate_data/", filename, sep = "")
+  file = read_csv(filenamepath, col_names = F)
+  labels = str_match(filenamepath, "heartrate_data/([0-9]+)_([a-zA-Z]+)_heartrate_resamp.csv")
+  Participant_num = labels[2]
+  output = as.data.frame(t(file[,1:14000]))
+  names(output)[1] = labels[2]
+  output
+
+}
+
+ok <- nyfunct("001_RHN_heartrate_resamp.csv")
+
+hrdata1 = list.files(path = "heartrate_data/", pattern = "resamp.csv") %>% ## NB replace with your path to the files 
+    purrr::map_dfc(nyfunct)
+
+#Scaling hrdata so it gets easier to compare
+scaledhrdata1 <- scale(hrdata1)
+scaledhrdata1 <- as.data.frame(scaledhrdata1)
+
+#Making a for-loop that replaces outliers with the mean between the datapoint prior and after the data point
+for(col in 1:ncol(scaledhrdata1)) { # for-loop over columns
+  for( row in 2:nrow(scaledhrdata1)-1) { #for over rows
+    value = scaledhrdata1[row,col]
+    if(value > 3 | value < -3){
+      value <- mean(c(scaledhrdata1[row-1,col],scaledhrdata1[row+1,col]))
+      
+    }
+   
+  }
+}
+#note: if many outliers in a row = the mean between prior and the datapoint after might not be the best solution
+
+#stories
+story1 <- scaledhrdata1[26:373,]
+story2 <- scaledhrdata1[500:1045,]
+story3 <- scaledhrdata1[1171:1440,]
+story4 <- scaledhrdata1[1556:1899,]
+story5 <- scaledhrdata1[2025:2297,]
+story6 <- scaledhrdata1[2423:2653,]
+story7 <- scaledhrdata1[2779:3135,]
+story8 <- scaledhrdata1[3261:3627,]
+story9 <- scaledhrdata1[3753:4010,]
+story10 <- scaledhrdata1[4136:4294,]
+story11 <- scaledhrdata1[4420:4581,]
+story12 <- scaledhrdata1[4707:5004,]
+story13 <- scaledhrdata1[5131:5425,]
+story14 <- scaledhrdata1[5552:6035,]
+story15 <- scaledhrdata1[6161:6576,]
+story16 <- scaledhrdata1[6703:7098,]
+story17 <- scaledhrdata1[7225:7556,]
+story18 <- scaledhrdata1[7682:7940,]
+story19 <- scaledhrdata1[8066:8601,]
+story20 <- scaledhrdata1[8728:8969,]
+story21 <- scaledhrdata1[9095:9316,]
+story22 <- scaledhrdata1[9442:9902,]
+story23 <- scaledhrdata1[10028:10409,]
+story24 <- scaledhrdata1[10535:10803,]
+story25 <- scaledhrdata1[10930:11364,]
+story26 <- scaledhrdata1[11490:11735,]
+story27 <- scaledhrdata1[11862:12296,]
+story28 <- scaledhrdata1[12422:12694,]
+story29 <- scaledhrdata1[12820:13034,]
+story30 <- scaledhrdata1[13160:13462,]
+
+#summing stories
+therealstory <- rbind(story1, story2, story3, story4, story5, story6, story7, story8, story9, story10, story11, story12, story13, story14, story15, story16, story17, story18, story19, story20, story21, story22, story23, story24, story25, story26, story27, story28, story29, story30) 
+
+#Make a contrast column where it puts 1 everytime a story is told and 0 when there is not
+for(i in 1:nrow(scaledhrdata1)) {
+  if (rownames(scaledhrdata1)[i] %in% rownames(therealstory)) {
+    scaledhrdata1$con[i] = 1
+  } else{
+    scaledhrdata1$con[i] = 0
+  }
+}
+
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
