@@ -27,23 +27,78 @@ devtools::install_github("Guscode/Sentida")
 library(Sentida)
 Sys.setlocale(category = "LC_ALL", locale = "UTF-8")
 
-#Make a function that puts the text into sentida-dictionary
-funtext <- function(filename) {
+analysetextfile <- function(filename) {
   filenamepath = paste("story_texts/", filename, sep = "")
-  file = read_file(filenamepath) 
+  file = read_file(filenamepath)
   Sentida_mean = sentida(file, output = "mean")
   Sentida_total = sentida(file, output = "total")
   labels = str_match(filenamepath, "story_texts/Fiction_story([0-9]+).txt")
   story_num = as.numeric(labels[2])
   output <- data.frame(story_num, Sentida_mean, Sentida_total)
-  }
+}
 
 #Puts all the sentida scores into a dataframe
 hr = list.files(path = "story_texts/", pattern = "txt") %>% ## NB replace with your path to the files 
-    purrr::map_df(funtext)
+    purrr::map_df(analyse_textfile_per_sentence)
+
+story_intervals = list(c(26, 373), c(500, 1045), c(1171,1440), c(1556,1899), c(2025, 2297), c(2423, 2653), c(2779, 3135), c(3261, 3627), c(3753, 4010), c(4136, 4294), c(4420, 4581), c(4707, 5004), c(5131, 5425), c(5552, 6034), c(6161, 6576), c(6703, 7098), c(7225, 7556), c(7682, 7940), c(8066, 8601), c(8728, 8969), c(9095, 9316), c(9442, 9902), c(10028, 10409), c(10535, 10803), c(10930, 11364), c(11490, 11735), c(11862, 12296), c(12422, 12694), c(12820, 13034), c(13160, 13462))
+
+story_intervals
+
+#Make a function that puts the text into sentida-dictionary
+analyse_textfile_per_sentence <- function(filename) {
+  filenamepath = paste("story_texts/", filename, sep = "")
+  file = read_file(filenamepath)
+  file <- str_trim(file)
+  
+  #Making sentida scores for each sentence of the stories
+  sentida_sentence_mean <- c()
+  sentida_sentence_total <- c()
+  sentence_ratio <- c()
+  filesplit <- str_split(file, "\\.", simplify = T)
+
+  for (i in 1:length(filesplit)){
+    sentence <- filesplit[i]
+    sentence <- str_trim(sentence)
+    if (sentence == ""){
+      next
+    }
+    ratio <- nchar(sentence)/nchar(file)
+    sentence_mean <- sentida(sentence, output = "mean")
+    sentence_total <- sentida(sentence, output = "total")
+    sentida_sentence_mean <-  c(sentida_sentence_mean, sentence_mean)
+    sentida_sentence_total <- c(sentida_sentence_total, sentence_total)
+    sentence_ratio <- c(sentence_ratio, ratio)
+  }
+  
+  
+  
+  sentence_number <- 1:length(sentida_sentence_mean)
+  Sentida_mean = sentida(file, output = "mean")
+  Sentida_total = sentida(file, output = "total")
+  labels = str_match(filenamepath, "story_texts/Fiction_story([0-9]+).txt")
+  
+  story_num = as.numeric(labels[2])
+  
+  interval <- story_intervals[[story_num]]
+  intervallength <- interval[2]-interval[1]
+  ranges <- round(intervallength*sentence_ratio)
+  cumranges <- cumsum(ranges)+interval[1]
+  cumranges <- c(interval[1], cumranges)
+  int_start <- cumranges[-length(cumranges)]
+  int_end <- cumranges[-1]
+  
+  output <- data.frame(story_num, Sentida_mean, Sentida_total, sentida_sentence_mean, sentida_sentence_total, sentence_number, sentence_ratio, int_start, int_end)
+}
+
+
+#Puts all the sentida scores into a dataframe
+sentence_analysis = list.files(path = "story_texts/", pattern = "txt") %>% ## NB replace with your path to the files 
+    purrr::map_df(analyse_textfile_per_sentence)
 
 #Merge it into logdata
 logdf <- merge(hr,logdata)
+
 
 
 #Sorting after storynumber
@@ -109,6 +164,7 @@ for(col in 1:ncol(hrdata1)){
 scaledhrdata1 <- scale(hrdata1)
 scaledhrdata1 <- as.data.frame(scaledhrdata1)
 
+
 #Making a for-loop that replaces outliers with the mean between the datapoint prior and after the data point
 
 for(col in 1:ncol(scaledhrdata1)) { # for-loop over columns
@@ -121,6 +177,10 @@ for(col in 1:ncol(scaledhrdata1)) { # for-loop over columns
   }
 }
 #note: if many outliers in a row = the mean between prior and the datapoint after might not be the best solution
+
+#Make a 'drift column'
+scaledhrdata1$driftdown <- c(-6999:7000)
+scaledhrdata1$driftup <- c(7000:-6999)
 
 #stories
 story1 <- scaledhrdata1[26:373,]
@@ -154,6 +214,9 @@ story28 <- scaledhrdata1[12422:12694,]
 story29 <- scaledhrdata1[12820:13034,]
 story30 <- scaledhrdata1[13160:13462,]
 
+
+
+
 #summing stories
 therealstory <- rbind(story1, story2, story3, story4, story5, story6, story7, story8, story9, story10, story11, story12, story13, story14, story15, story16, story17, story18, story19, story20, story21, story22, story23, story24, story25, story26, story27, story28, story29, story30) 
 
@@ -166,7 +229,7 @@ for(i in 1:nrow(scaledhrdata1)) {
   }
 }
 
-#Make a contrast column where it puts the sentida value as contrast everytime a story is told and 0 when there is not
+#Make a contrast column where it puts the sentida value as contrast every time a story is told and 0 when there is not
 for(i in 1:nrow(scaledhrdata1)) {
   if (rownames(scaledhrdata1)[i] %in% rownames(story1)) {
     scaledhrdata1$sen[i] = hr$Sentida_mean[1]
@@ -294,6 +357,12 @@ for(i in 1:nrow(scaledhrdata1)) {
   }
 }
 
+#Scaling sentidascores
+scale(scaledhrdata1$sen)
+
+for (row in 1:nrow(sentence_analysis)){
+  
+}
 
 #models to see if it matters whether a story is told or not on the heartrate data
 m10 <- lm(scaledhrdata1$`001` ~ con, data = scaledhrdata1)
@@ -334,7 +403,7 @@ m44 <- lm(scaledhrdata1$`038` ~ con, data = scaledhrdata1)
 m45 <- lm(scaledhrdata1$`039` ~ con, data = scaledhrdata1)
 m46 <- lm(scaledhrdata1$`040` ~ con, data = scaledhrdata1)
 
-dfbeta <- merge(m10$coefficients,m11$coefficients,m12$coefficients)
+
 
 #extracting betavalues from the models
 betavalues <- c(m10$coefficients["con"], m11$coefficients["con"], m12$coefficients["con"], m13$coefficients["con"], m14$coefficients["con"], m15$coefficients["con"], m16$coefficients["con"], m17$coefficients["con"], m18$coefficients["con"], m19$coefficients["con"], m20$coefficients["con"], m21$coefficients["con"], m22$coefficients["con"], m23$coefficients["con"], m24$coefficients["con"], m25$coefficients["con"], m26$coefficients["con"], m27$coefficients["con"], m28$coefficients["con"], m29$coefficients["con"], m30$coefficients["con"], m31$coefficients["con"], m32$coefficients["con"], m33$coefficients["con"], m34$coefficients["con"], m35$coefficients["con"], m36$coefficients["con"], m37$coefficients["con"], m38$coefficients["con"], m39$coefficients["con"], m40$coefficients["con"], m41$coefficients["con"], m42$coefficients["con"], m43$coefficients["con"], m44$coefficients["con"], m45$coefficients["con"], m46$coefficients["con"])
@@ -342,19 +411,74 @@ betavalues <- as.data.frame(betavalues)
 
 #t.testing if there is an effect
 t.test(betavalues$betavalues)
+
+str(betavalues)
+#Plotting normality check
+ggplot(betavalues, aes(x = betavalues)) +
+  geom_histogram(aes(y = ..density..), binwidth = 0.01) +
+  ggtitle("betavalues") +
+  stat_function(fun = dnorm, args = list(mean = mean(betavalues$betavalues, na.rm = TRUE), sd = sd(betavalues$betavalues, na.rm = TRUE)), colour= "darkgreen", size = 1)+
+  theme_classic()
+
+#Normality check
+ggplot(betavalues, aes(sample = betavalues)) + stat_qq()+ stat_qq_line(colour = "red")
+
 ```
+
+```{r}
+str(scaledhrdata1)
+
+newtest <- scaledhrdata1 %>% group_by(scaledhrdata1$`001`)
+```
+
 
 ```{r}
 #Dividing the dataset into participants having the same conditions
 library(dplyr)
 factsubset <- scaledhrdata1 %>% 
-  select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`,`040`)
+  select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`,`040`, storynum)
 
 fictsubset <- scaledhrdata1 %>% 
-  select(`002`,`004`, `006`, `008`, `012`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`)
+  select(`002`,`004`, `006`, `008`, `012`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`, storynum)
 ```
 
 ```{r}
+for(i in 1:nrow(factsubset)){
+  if (factsubset$storynum[i] == 0){
+    factsubset$fictfact[i] = 0
+  }
+  else if (factsubset$storynum[i] %% 2 == 1) {
+    factsubset$fictfact[i] = 1
+  }
+  else {
+    factsubset$fictfact[i] = -1
+  }
+    
+} 
+
+for(i in 1:nrow(fictsubset)){
+  if (fictsubset$storynum[i] == 0){
+    fictsubset$fictfact[i] = 0
+  }
+  else if (fictsubset$storynum[i] %% 2 == 0) {
+    fictsubset$fictfact[i] = 1
+  }
+  else {
+    fictsubset$fictfact[i] = -1
+  }
+    
+} 
+
+getwd()
+write.csv(scaledhrdata1, "/Users/kaspermichelsen/Bachelor/heartratedfprocessed.csv")
+
+newtest <- scaledhrdata1 %>% 
+  pivot_longer(
+    cols = starts_with(scaledhrdata1$`001`), 
+    names_to = "week", 
+    values_to = "rank",
+    values_drop_na = TRUE
+  )
 
 ```
 
