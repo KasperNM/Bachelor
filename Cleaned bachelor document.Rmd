@@ -59,27 +59,30 @@ analyse_textfile_per_sentence <- function(filename) {
 
   for (i in 1:length(filesplit)){
     sentence <- filesplit[i]
+    # Add +1 since the dot is removed, but still counts into the total length
+   
+    does_containt_char = grepl("!", sentence, fixed=TRUE)
+    sentence_length_with_spaces_and_dot = nchar(sentence) + (if (does_containt_char) 0 else 1)
     sentence <- str_trim(sentence)
     if (sentence == ""){
       next
     }
-    ratio <- nchar(sentence)/nchar(file)
+    
+    ratio <- sentence_length_with_spaces_and_dot/nchar(file)
+    
     sentence_mean <- sentida(sentence, output = "mean")
     sentence_total <- sentida(sentence, output = "total")
     sentida_sentence_mean <-  c(sentida_sentence_mean, sentence_mean)
     sentida_sentence_total <- c(sentida_sentence_total, sentence_total)
     sentence_ratio <- c(sentence_ratio, ratio)
   }
-  
-  
-  
+
   sentence_number <- 1:length(sentida_sentence_mean)
   Sentida_mean = sentida(file, output = "mean")
   Sentida_total = sentida(file, output = "total")
   labels = str_match(filenamepath, "story_texts/Fiction_story([0-9]+).txt")
   
   story_num = as.numeric(labels[2])
-  
   interval <- story_intervals[[story_num]]
   intervallength <- interval[2]-interval[1]
   ranges <- round(intervallength*sentence_ratio)
@@ -91,6 +94,13 @@ analyse_textfile_per_sentence <- function(filename) {
   output <- data.frame(story_num, Sentida_mean, Sentida_total, sentida_sentence_mean, sentida_sentence_total, sentence_number, sentence_ratio, int_start, int_end)
 }
 
+ interval <- story_intervals[[2]]
+  intervallength <- interval[2]-interval[1]
+  ranges <- round(intervallength*sentence_ratio)
+  cumranges <- cumsum(ranges)+interval[1]
+  cumranges <- c(interval[1], cumranges)
+  int_start <- cumranges[-length(cumranges)]
+  int_end <- cumranges[-1]
 
 #Puts all the sentida scores into a dataframe
 sentence_analysis = list.files(path = "story_texts/", pattern = "txt") %>% ## NB replace with your path to the files 
@@ -231,6 +241,10 @@ for(i in 1:nrow(scaledhrdata1)) {
 
 #Make a contrast column where it puts the sentida value as contrast every time a story is told and 0 when there is not
 for(i in 1:nrow(scaledhrdata1)) {
+  scaledhrdata1$sentence_number <- 0
+  scaledhrdata1$sentence_sen_mean <- 0
+  scaledhrdata1$sentence_sen_total <- 0
+  
   if (rownames(scaledhrdata1)[i] %in% rownames(story1)) {
     scaledhrdata1$sen[i] = hr$Sentida_mean[1]
     scaledhrdata1$storynum[i] = 1
@@ -361,8 +375,14 @@ for(i in 1:nrow(scaledhrdata1)) {
 scale(scaledhrdata1$sen)
 
 for (row in 1:nrow(sentence_analysis)){
-  
+  start <- sentence_analysis$int_start[row]
+  end <- sentence_analysis$int_end[row]
+  for (j in start:end){
+    scaledhrdata1$sentence_number[j] <- sentence_analysis$sentence_number[row]
+    
+  }
 }
+
 
 #models to see if it matters whether a story is told or not on the heartrate data
 m10 <- lm(scaledhrdata1$`001` ~ con, data = scaledhrdata1)
