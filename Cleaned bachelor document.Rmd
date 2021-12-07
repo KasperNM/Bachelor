@@ -39,7 +39,7 @@ analysetextfile <- function(filename) {
 
 #Puts all the sentida scores into a dataframe
 hr = list.files(path = "story_texts/", pattern = "txt") %>% ## NB replace with your path to the files 
-    purrr::map_df(analyse_textfile_per_sentence)
+    purrr::map_df(analysetextfile)
 
 story_intervals = list(c(26, 373), c(500, 1045), c(1171,1440), c(1556,1899), c(2025, 2297), c(2423, 2653), c(2779, 3135), c(3261, 3627), c(3753, 4010), c(4136, 4294), c(4420, 4581), c(4707, 5004), c(5131, 5425), c(5552, 6034), c(6161, 6576), c(6703, 7098), c(7225, 7556), c(7682, 7940), c(8066, 8601), c(8728, 8969), c(9095, 9316), c(9442, 9902), c(10028, 10409), c(10535, 10803), c(10930, 11364), c(11490, 11735), c(11862, 12296), c(12422, 12694), c(12820, 13034), c(13160, 13462))
 
@@ -94,13 +94,6 @@ analyse_textfile_per_sentence <- function(filename) {
   output <- data.frame(story_num, Sentida_mean, Sentida_total, sentida_sentence_mean, sentida_sentence_total, sentence_number, sentence_ratio, int_start, int_end)
 }
 
- interval <- story_intervals[[2]]
-  intervallength <- interval[2]-interval[1]
-  ranges <- round(intervallength*sentence_ratio)
-  cumranges <- cumsum(ranges)+interval[1]
-  cumranges <- c(interval[1], cumranges)
-  int_start <- cumranges[-length(cumranges)]
-  int_end <- cumranges[-1]
 
 #Puts all the sentida scores into a dataframe
 sentence_analysis = list.files(path = "story_texts/", pattern = "txt") %>% ## NB replace with your path to the files 
@@ -171,26 +164,17 @@ for(col in 1:ncol(hrdata1)){
 
 #Scaling hrdata so it gets easier to compare
 
-scaledhrdata1 <- scale(hrdata1)
-scaledhrdata1 <- as.data.frame(scaledhrdata1)
+scaledhrdata1 <- hrdata1
+#scaledhrdata1 <- as.data.frame(scaledhrdata1)
 
 
 #Making a for-loop that replaces outliers with the mean between the datapoint prior and after the data point
 
-for(col in 1:ncol(scaledhrdata1)) { # for-loop over columns
-  for(row in 2:nrow(scaledhrdata1)-1) { #for over rows
-    value = scaledhrdata1[row,col]
-    if(value > 3 | value < -3){
-      value <- mean(c(scaledhrdata1[row-1,col],scaledhrdata1[row+1,col]))
-      
-    }
-  }
-}
+
 #note: if many outliers in a row = the mean between prior and the datapoint after might not be the best solution
 
 #Make a 'drift column'
-scaledhrdata1$driftdown <- c(-6999:7000)
-scaledhrdata1$driftup <- c(7000:-6999)
+scaledhrdata1$drift <- c(7000:-6999)
 
 #stories
 story1 <- scaledhrdata1[26:373,]
@@ -371,18 +355,39 @@ for(i in 1:nrow(scaledhrdata1)) {
   }
 }
 
-#Scaling sentidascores
-scale(scaledhrdata1$sen)
 
+#puts sentida-scores by sentence into hrdata
 for (row in 1:nrow(sentence_analysis)){
   start <- sentence_analysis$int_start[row]
   end <- sentence_analysis$int_end[row]
   for (j in start:end){
     scaledhrdata1$sentence_number[j] <- sentence_analysis$sentence_number[row]
+    scaledhrdata1$sentence_sen_mean[j] <- sentence_analysis$sentida_sentence_mean[row]
+    scaledhrdata1$sentence_sen_total[j] <- sentence_analysis$sentida_sentence_total[row]
     
   }
 }
 
+#Scale everything
+scaledhrdata1 <- scale(scaledhrdata1)
+scaledhrdata1 <- as.data.frame(scaledhrdata1)
+
+scaledhrdataoutlierrm <- scaledhrdata1 %>% select(`001`,`002`,`003`,`004`,`005`,`006`,`007`,`008`,`009`,`012`,`013`,`014`,`015`,`016`,`017`,`018`,`019`,`020`,`021`,`022`,`023`,`024`,`025`,`026`,`027`,`028`,`029`,`030`,`031`,`033`,`034`,`035`,`036`,`037`,`038`,`039`,`040`, "drift")
+
+othervariables <- scaledhrdata1 %>% select("drift","con", "sentence_number", "sentence_sen_mean", "sentence_sen_total", "sen", "storynum")
+
+#remove outliers after scaling
+for(col in 1:ncol(scaledhrdataoutlierrm)) { # for-loop over columns
+  for(row in 2:nrow(scaledhrdataoutlierrm)-1) { #for over rows
+    value = scaledhrdataoutlierrm[row,col]
+    if(value > 3 | value < -3){
+      print(value)
+    scaledhrdataoutlierrm[row,col] <- mean(c(scaledhrdataoutlierrm[row-1,col]), scaledhrdataoutlierrm[row+1,col])
+    }
+  }
+}
+
+scaledhrdata1 <- merge(scaledhrdataoutlierrm, othervariables, c("drift"))
 
 #models to see if it matters whether a story is told or not on the heartrate data
 m10 <- lm(scaledhrdata1$`001` ~ con, data = scaledhrdata1)
@@ -460,6 +465,10 @@ factsubset <- scaledhrdata1 %>%
 
 fictsubset <- scaledhrdata1 %>% 
   select(`002`,`004`, `006`, `008`, `012`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`, storynum)
+
+pivotdf <- scaledhrdata1 %>% pivot_longer(`001`:`002`:`003`:`004`:`005`:`006`:`007`:`008`:`009`:`012`:`013`:`014`:`015`:`016`:`017`:`018`:`019`:`020`:`021`:`022`:`023`:`024`:`025`:`026`:`027`:`028`:`029`:`030`:`031`:`033`:`034`:`035`:`036`:`037`:`038`:`039`:`040`, "Participant number")
+
+newmodel <- lmerTest::lmer()
 ```
 
 ```{r}
@@ -492,13 +501,6 @@ for(i in 1:nrow(fictsubset)){
 getwd()
 write.csv(scaledhrdata1, "/Users/kaspermichelsen/Bachelor/heartratedfprocessed.csv")
 
-newtest <- scaledhrdata1 %>% 
-  pivot_longer(
-    cols = starts_with(scaledhrdata1$`001`), 
-    names_to = "week", 
-    values_to = "rank",
-    values_drop_na = TRUE
-  )
 
 ```
 
