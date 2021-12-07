@@ -466,9 +466,17 @@ factsubset <- scaledhrdata1 %>%
 fictsubset <- scaledhrdata1 %>% 
   select(`002`,`004`, `006`, `008`, `012`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`, storynum)
 
-pivotdf <- scaledhrdata1 %>% pivot_longer(`001`:`002`:`003`:`004`:`005`:`006`:`007`:`008`:`009`:`012`:`013`:`014`:`015`:`016`:`017`:`018`:`019`:`020`:`021`:`022`:`023`:`024`:`025`:`026`:`027`:`028`:`029`:`030`:`031`:`033`:`034`:`035`:`036`:`037`:`038`:`039`:`040`, "Participant number")
+pivotdf <- scaledhrdata1 %>% pivot_longer(`001`:`002`:`003`:`004`:`005`:`006`:`007`:`008`:`009`:`012`:`013`:`014`:`015`:`016`:`017`:`018`:`019`:`020`:`021`:`022`:`023`:`024`:`025`:`026`:`027`:`028`:`029`:`030`:`031`:`033`:`034`:`035`:`036`:`037`:`038`:`039`:`040`, "Participant_number")
 
-newmodel <- lmerTest::lmer()
+newmodel <- lmerTest::lmer(value ~ sentence_sen_mean + con + drift + (1|Participant_number), data = pivotdf)
+summary(newmodel)
+
+ts.plot(scaledhrdata1$`002`)
+ts.plot(scaledhrdata1$sentence_sen_mean)
+
+ts.plot(pivotdf)
+
+str(pivotdf)
 ```
 
 ```{r}
