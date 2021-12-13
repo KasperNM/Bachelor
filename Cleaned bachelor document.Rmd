@@ -161,7 +161,8 @@ for(col in 1:ncol(hrdata1)){
  
 }
 
-
+#remove two participants due to measurement error
+hrdata1 <- within(hrdata1, rm(`012`, `040`))
 #Scaling hrdata so it gets easier to compare
 
 scaledhrdata1 <- hrdata1
@@ -368,13 +369,16 @@ for (row in 1:nrow(sentence_analysis)){
   }
 }
 
+scaledhrdata1$time <- c(1:14000)
+
+othervariables <- scaledhrdata1 %>% select("con", "sentence_number", "storynum", "time")
+
 #Scale everything
 scaledhrdata1 <- scale(scaledhrdata1)
 scaledhrdata1 <- as.data.frame(scaledhrdata1)
 
-scaledhrdataoutlierrm <- scaledhrdata1 %>% select(`001`,`002`,`003`,`004`,`005`,`006`,`007`,`008`,`009`,`012`,`013`,`014`,`015`,`016`,`017`,`018`,`019`,`020`,`021`,`022`,`023`,`024`,`025`,`026`,`027`,`028`,`029`,`030`,`031`,`033`,`034`,`035`,`036`,`037`,`038`,`039`,`040`, "drift")
+scaledhrdataoutlierrm <- scaledhrdata1 %>% select(`001`,`002`,`003`,`004`,`005`,`006`,`007`,`008`,`009`,`013`,`014`,`015`,`016`,`017`,`018`,`019`,`020`,`021`,`022`,`023`,`024`,`025`,`026`,`027`,`028`,`029`,`030`,`031`,`033`,`034`,`035`,`036`,`037`,`038`,`039`, "drift")
 
-othervariables <- scaledhrdata1 %>% select("drift","con", "sentence_number", "sentence_sen_mean", "sentence_sen_total", "sen", "storynum")
 
 #remove outliers after scaling
 for(col in 1:ncol(scaledhrdataoutlierrm)) { # for-loop over columns
@@ -387,7 +391,14 @@ for(col in 1:ncol(scaledhrdataoutlierrm)) { # for-loop over columns
   }
 }
 
-scaledhrdata1 <- merge(scaledhrdataoutlierrm, othervariables, c("drift"))
+scaledothervariables <-  scaledhrdata1 %>% select("drift", "sentence_sen_mean", "sentence_sen_total", "sen")
+
+
+scaledhrdata1 <- merge(scaledhrdataoutlierrm, scaledothervariables, c("drift"))
+
+scaledhrdata1$time <- c(1:14000)
+
+scaledhrdata1 <- merge(scaledhrdata1, othervariables, c("time"))
 
 #models to see if it matters whether a story is told or not on the heartrate data
 m10 <- lm(scaledhrdata1$`001` ~ con, data = scaledhrdata1)
@@ -399,7 +410,6 @@ m15 <- lm(scaledhrdata1$`006` ~ con, data = scaledhrdata1)
 m16 <- lm(scaledhrdata1$`007` ~ con, data = scaledhrdata1)
 m17 <- lm(scaledhrdata1$`008` ~ con, data = scaledhrdata1)
 m18 <- lm(scaledhrdata1$`009` ~ con, data = scaledhrdata1)
-m19 <- lm(scaledhrdata1$`012` ~ con, data = scaledhrdata1)
 m20 <- lm(scaledhrdata1$`013` ~ con, data = scaledhrdata1)
 m21 <- lm(scaledhrdata1$`014` ~ con, data = scaledhrdata1)
 m22 <- lm(scaledhrdata1$`015` ~ con, data = scaledhrdata1)
@@ -426,12 +436,12 @@ m42 <- lm(scaledhrdata1$`036` ~ con, data = scaledhrdata1)
 m43 <- lm(scaledhrdata1$`037` ~ con, data = scaledhrdata1)
 m44 <- lm(scaledhrdata1$`038` ~ con, data = scaledhrdata1)
 m45 <- lm(scaledhrdata1$`039` ~ con, data = scaledhrdata1)
-m46 <- lm(scaledhrdata1$`040` ~ con, data = scaledhrdata1)
+
 
 
 
 #extracting betavalues from the models
-betavalues <- c(m10$coefficients["con"], m11$coefficients["con"], m12$coefficients["con"], m13$coefficients["con"], m14$coefficients["con"], m15$coefficients["con"], m16$coefficients["con"], m17$coefficients["con"], m18$coefficients["con"], m19$coefficients["con"], m20$coefficients["con"], m21$coefficients["con"], m22$coefficients["con"], m23$coefficients["con"], m24$coefficients["con"], m25$coefficients["con"], m26$coefficients["con"], m27$coefficients["con"], m28$coefficients["con"], m29$coefficients["con"], m30$coefficients["con"], m31$coefficients["con"], m32$coefficients["con"], m33$coefficients["con"], m34$coefficients["con"], m35$coefficients["con"], m36$coefficients["con"], m37$coefficients["con"], m38$coefficients["con"], m39$coefficients["con"], m40$coefficients["con"], m41$coefficients["con"], m42$coefficients["con"], m43$coefficients["con"], m44$coefficients["con"], m45$coefficients["con"], m46$coefficients["con"])
+betavalues <- c(m10$coefficients["con"], m11$coefficients["con"], m12$coefficients["con"], m13$coefficients["con"], m14$coefficients["con"], m15$coefficients["con"], m16$coefficients["con"], m17$coefficients["con"], m18$coefficients["con"],  m20$coefficients["con"], m21$coefficients["con"], m22$coefficients["con"], m23$coefficients["con"], m24$coefficients["con"], m25$coefficients["con"], m26$coefficients["con"], m27$coefficients["con"], m28$coefficients["con"], m29$coefficients["con"], m30$coefficients["con"], m31$coefficients["con"], m32$coefficients["con"], m33$coefficients["con"], m34$coefficients["con"], m35$coefficients["con"], m36$coefficients["con"], m37$coefficients["con"], m38$coefficients["con"], m39$coefficients["con"], m40$coefficients["con"], m41$coefficients["con"], m42$coefficients["con"], m43$coefficients["con"], m44$coefficients["con"], m45$coefficients["con"])
 betavalues <- as.data.frame(betavalues)
 
 #t.testing if there is an effect
@@ -458,28 +468,35 @@ newtest <- scaledhrdata1 %>% group_by(scaledhrdata1$`001`)
 
 
 ```{r}
-#Dividing the dataset into participants having the same conditions
-library(dplyr)
-factsubset <- scaledhrdata1 %>% 
-  select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`,`040`, storynum)
 
-fictsubset <- scaledhrdata1 %>% 
-  select(`002`,`004`, `006`, `008`, `012`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`, storynum)
 
-pivotdf <- scaledhrdata1 %>% pivot_longer(`001`:`002`:`003`:`004`:`005`:`006`:`007`:`008`:`009`:`012`:`013`:`014`:`015`:`016`:`017`:`018`:`019`:`020`:`021`:`022`:`023`:`024`:`025`:`026`:`027`:`028`:`029`:`030`:`031`:`033`:`034`:`035`:`036`:`037`:`038`:`039`:`040`, "Participant_number")
+pivotdf <- scaledhrdata1 %>% pivot_longer(`001`:`002`:`003`:`004`:`005`:`006`:`007`:`008`:`009`:`013`:`014`:`015`:`016`:`017`:`018`:`019`:`020`:`021`:`022`:`023`:`024`:`025`:`026`:`027`:`028`:`029`:`030`:`031`:`033`:`034`:`035`:`036`:`037`:`038`:`039`, "Participant_number")
 
 newmodel <- lmerTest::lmer(value ~ sentence_sen_mean + con + drift + (1|Participant_number), data = pivotdf)
 summary(newmodel)
 
+
+
 ts.plot(scaledhrdata1$`002`)
 ts.plot(scaledhrdata1$sentence_sen_mean)
 
-ts.plot(pivotdf)
+ggplot(scaledhrdata1, aes(x = time, y = sentence_sen_mean)) +
+         geom_line() 
+         
 
 str(pivotdf)
 ```
 
 ```{r}
+#Dividing the dataset into participants having the same conditions
+library(dplyr)
+factsubset <- scaledhrdata1 %>% 
+  select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`, storynum, drift, sentence_sen_mean, sentence_sen_total, sen, con, sentence_number, storynum, time)
+
+fictsubset <- scaledhrdata1 %>% 
+  select(`002`,`004`, `006`, `008`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`, storynum, drift, sentence_sen_mean, sentence_sen_total, sen, con, sentence_number, storynum, time)
+
+#Creating new contrast
 for(i in 1:nrow(factsubset)){
   if (factsubset$storynum[i] == 0){
     factsubset$fictfact[i] = 0
@@ -509,8 +526,46 @@ for(i in 1:nrow(fictsubset)){
 getwd()
 write.csv(scaledhrdata1, "/Users/kaspermichelsen/Bachelor/heartratedfprocessed.csv")
 
+pivotfact <- factsubset %>% 
+  pivot_longer(`001`:`003`:`005`:`007`: `009`: `013`: `015`: `017`: `019`:`021`:`023`:`025`:`027`:`029`:`031`: `034`: `036`: `038`, "Participant_number")
 
+pivotfict <- fictsubset %>% 
+  pivot_longer(`002`:`004`: `006`: `008`: `014`: `016`: `018`: `020`:`022`:`024`:`026`:`028`:`030`:`033`: `035`: `037`: `039`, "Participant_number")
+
+modelfact <- lmerTest::lmer(value ~ sentence_sen_mean + fictfact + drift + (1|Participant_number), data = pivotfact)
+
+modelfict <- lmerTest::lmer(value ~ sentence_sen_mean + fictfact + drift + (1|Participant_number), data = pivotfict)
+
+summary(modelfact)
+summary(modelfict)
 ```
+
+
+```{r}
+del=1/10
+#Use a function to find the different spectral elements
+hrdf_spec<-spectrum(scaledhrdata1$`002`,plot=FALSE)
+#convert into understandable axes
+spx <- hrdf_spec$freq/del
+spy <- 2*hrdf_spec$spec
+plot(spy[1:1000]~spx[1:1000],xlab="frequency (Hz)",ylab="spectral density",type="l",col='darkgreen')
+```
+```{r}
+library(gsignal)
+
+newone <- scaledhrdata1
+#Making filters with different cutoffs for display
+newone$data2<-fftfilt(rep(1, 10)/10, newone$`002`) # apply 10-point averaging filter
+newone$data3<-fftfilt(rep(1, 1000)/1000, newone$`002`) # apply 1000-point averaging filter
+
+fig1<-ggplot(newone,aes(x=time,y=`002`))+geom_path()
+fig2<-ggplot(newone,aes(x=time,y=data2))+geom_path(col='darkred')
+fig3<-ggplot(newone,aes(x=time,y=data3, fill = sentence_sen_mean))+geom_path(col='darkgreen')
+
+library(cowplot)
+plot_grid(fig1,fig2,fig3)
+```
+
 
 ## R Markdown
 
