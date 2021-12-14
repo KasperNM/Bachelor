@@ -384,17 +384,25 @@ scaledhrdataoutlierrm <- scaledhrdata1 %>% select(`001`,`002`,`003`,`004`,`005`,
 for(col in 1:ncol(scaledhrdataoutlierrm)) { # for-loop over columns
   for(row in 2:nrow(scaledhrdataoutlierrm)-1) { #for over rows
     value = scaledhrdataoutlierrm[row,col]
-    if(value > 3 | value < -3){
+    if(value > 3.5 | value < -3.5){
       print(value)
     scaledhrdataoutlierrm[row,col] <- mean(c(scaledhrdataoutlierrm[row-1,col]), scaledhrdataoutlierrm[row+1,col])
     }
   }
 }
 
+#Creating rowmeans for all participants
+scaledhrdataoutlierrm1 <- scaledhrdataoutlierrm %>% select(`001`,`002`,`003`,`004`,`005`,`006`,`007`,`008`,`009`,`013`,`014`,`015`,`016`,`017`,`018`,`019`,`020`,`021`,`022`,`023`,`024`,`025`,`026`,`027`,`028`,`029`,`030`,`031`,`033`,`034`,`035`,`036`,`037`,`038`,`039`)
+
+scaledhrdataoutlierrm1$meanHR <- rowMeans(scaledhrdataoutlierrm1)
+
+#adding drift to outlierremove_dataframe
+scaledhrdataoutlierrm1$drift <- scaledhrdataoutlierrm$drift
+
 scaledothervariables <-  scaledhrdata1 %>% select("drift", "sentence_sen_mean", "sentence_sen_total", "sen")
 
 
-scaledhrdata1 <- merge(scaledhrdataoutlierrm, scaledothervariables, c("drift"))
+scaledhrdata1 <- merge(scaledhrdataoutlierrm1, scaledothervariables, c("drift"))
 
 scaledhrdata1$time <- c(1:14000)
 
@@ -464,6 +472,8 @@ ggplot(betavalues, aes(sample = betavalues)) + stat_qq()+ stat_qq_line(colour = 
 str(scaledhrdata1)
 
 newtest <- scaledhrdata1 %>% group_by(scaledhrdata1$`001`)
+
+scaledhrdata1$meanHR <- rowMeans(scaledhrdata1$`001`, scaledhrdata1$`002`)
 ```
 
 
@@ -472,10 +482,17 @@ newtest <- scaledhrdata1 %>% group_by(scaledhrdata1$`001`)
 
 pivotdf <- scaledhrdata1 %>% pivot_longer(`001`:`002`:`003`:`004`:`005`:`006`:`007`:`008`:`009`:`013`:`014`:`015`:`016`:`017`:`018`:`019`:`020`:`021`:`022`:`023`:`024`:`025`:`026`:`027`:`028`:`029`:`030`:`031`:`033`:`034`:`035`:`036`:`037`:`038`:`039`, "Participant_number")
 
-newmodel <- lmerTest::lmer(value ~ sentence_sen_mean + con + drift + (1|Participant_number), data = pivotdf)
+newmodel <- lmerTest::lmer(value ~ sentence_sen_mean + con + drift + abs(sentence_sen_mean)  + (1|Participant_number), data = pivotdf)
 summary(newmodel)
 
+newpushedmodel <- 
 
+MuMIn::r.squaredGLMM(newmodel1)
+
+#Regression on mean of HR
+newmodel1 <- lm(meanHR ~ sentence_sen_mean, data = scaledhrdata1)
+
+summary(newmodel1)
 
 ts.plot(scaledhrdata1$`002`)
 ts.plot(scaledhrdata1$sentence_sen_mean)
@@ -483,18 +500,83 @@ ts.plot(scaledhrdata1$sentence_sen_mean)
 ggplot(scaledhrdata1, aes(x = time, y = sentence_sen_mean)) +
          geom_line() 
          
+#For-loop for fitting HR on Sentida mean
+test500 <- scaledhrdata1
+meanhrdf <- scaledhrdata1$meanHR
+meanhrdf <- as.data.frame(meanhrdf)
 
-str(pivotdf)
+sentence_sen_df <- scaledhrdata1$sentence_sen_mean
+sentence_sen_df <- as.data.frame(sentence_sen_df)
+
+dfcoef <- c()
+library(gtools)
+
+for( i in 1:nrow(sentence_sen_df)){
+  if( i == 200){
+    break
+  }
+  combinedf <- cbind(sentence_sen_df,meanhrdf)
+  m500 <- lm(meanhrdf ~ sentence_sen_df, combinedf)
+  coef <- m500$coefficients["sentence_sen_df"]
+  dfcoef <- c(dfcoef, coef)
+  meanhrdf <- meanhrdf %>% mutate_all(.funs = funs(lag))
+  meanhrdf <- na.replace(meanhrdf, 0)
+  
+}
+
+dfcoef <- as.data.frame(dfcoef)
+
+#The beta coefficient is highest at 16 datapoints
+plot(dfcoef$dfcoef[50:70])
+
+#Make a meanhr that is pushed 16 times
+meanhrpushed <- scaledhrdata1$meanHR
+meanhrpushed <- as.data.frame(meanhrpushed)
+
+for( i in 1:nrow(meanhrpushed)){
+  meanhrpushed <- meanhrpushed %>% mutate_all(.funs = funs(lag))
+  meanhrpushed <- na.replace(meanhrpushed, 0)
+  if( i == 65){
+    break
+  }
+}
+
+scaledhrdata1 <- cbind(scaledhrdata1, meanhrpushed)
+
+pushedhrdata <- scaledhrdata1 %>% select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`,`002`,`004`, `006`, `008`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`)
+
+for( i in 1:nrow(pushedhrdata)){
+  pushedhrdata <- pushedhrdata %>% mutate_all(.funs = funs(lag))
+  pushedhrdata <- na.replace(pushedhrdata, 0)
+  if( i == 65){
+    break
+  }
+}
+
+variablesnew <- scaledhrdata1 %>% select(drift, sentence_sen_mean, sentence_sen_total, sen, con, sentence_number, storynum, time)
+pushedhrdata1 <- cbind(pushedhrdata, variablesnew)
+
+pushedpivotdf <- pushedhrdata1 %>% pivot_longer(`001`:`002`:`003`:`004`:`005`:`006`:`007`:`008`:`009`:`013`:`014`:`015`:`016`:`017`:`018`:`019`:`020`:`021`:`022`:`023`:`024`:`025`:`026`:`027`:`028`:`029`:`030`:`031`:`033`:`034`:`035`:`036`:`037`:`038`:`039`, "Participant_number")
+
+newmodelpushed <- lmerTest::lmer(value ~ sentence_sen_mean + con + drift + abs(sentence_sen_mean)  + (1|Participant_number), data = pushedpivotdf)
+summary(newmodelpushed)
+
 ```
 
 ```{r}
 #Dividing the dataset into participants having the same conditions
 library(dplyr)
+factsubby <- scaledhrdata1 %>% 
+  select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`)
+scaledhrdata1$meanfactHR <- rowMeans(factsubby)
+fictsubby <- scaledhrdata1 %>% 
+  select(`002`,`004`, `006`, `008`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`)
+scaledhrdata1$meanfictHR <- rowMeans((fictsubby))
 factsubset <- scaledhrdata1 %>% 
-  select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`, storynum, drift, sentence_sen_mean, sentence_sen_total, sen, con, sentence_number, storynum, time)
+  select(`001`,`003`, `005`, `007`, `009`, `013`, `015`, `017`, `019`,`021`,`023`,`025`,`027`,`029`,`031`, `034`, `036`, `038`, drift, sentence_sen_mean, sentence_sen_total, sen, con, sentence_number, storynum, time)
 
 fictsubset <- scaledhrdata1 %>% 
-  select(`002`,`004`, `006`, `008`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`, storynum, drift, sentence_sen_mean, sentence_sen_total, sen, con, sentence_number, storynum, time)
+  select(`002`,`004`, `006`, `008`, `014`, `016`, `018`, `020`,`022`,`024`,`026`,`028`,`030`,`033`, `035`, `037`, `039`, drift, sentence_sen_mean, sentence_sen_total, sen, con, sentence_number, storynum, time)
 
 #Creating new contrast
 for(i in 1:nrow(factsubset)){
@@ -529,8 +611,21 @@ write.csv(scaledhrdata1, "/Users/kaspermichelsen/Bachelor/heartratedfprocessed.c
 pivotfact <- factsubset %>% 
   pivot_longer(`001`:`003`:`005`:`007`: `009`: `013`: `015`: `017`: `019`:`021`:`023`:`025`:`027`:`029`:`031`: `034`: `036`: `038`, "Participant_number")
 
+pivotfact$group <- 1
+
 pivotfict <- fictsubset %>% 
   pivot_longer(`002`:`004`: `006`: `008`: `014`: `016`: `018`: `020`:`022`:`024`:`026`:`028`:`030`:`033`: `035`: `037`: `039`, "Participant_number")
+
+pivotfict$group <- 2
+
+pivotfictfactdf <- rbind(pivotfact, pivotfict)
+
+modelfictfact <- lmerTest::lmer(value ~ group:fictfact + (1|Participant_number), pivotfictfactdf)
+summary(modelfictfact)
+
+modelfictfact1 <- lmerTest::lmer(value ~ group*fictfact + (1|Participant_number), pivotfictfactdf)
+summary(modelfictfact1)
+
 
 modelfact <- lmerTest::lmer(value ~ sentence_sen_mean + fictfact + drift + (1|Participant_number), data = pivotfact)
 
@@ -538,16 +633,31 @@ modelfict <- lmerTest::lmer(value ~ sentence_sen_mean + fictfact + drift + (1|Pa
 
 summary(modelfact)
 summary(modelfict)
+
+
 ```
 
 
 ```{r}
 del=1/10
 #Use a function to find the different spectral elements
-hrdf_spec<-spectrum(scaledhrdata1$`002`,plot=FALSE)
+hrdf_spec<-spectrum(scaledhrdata1$meanHR,plot=FALSE)
 #convert into understandable axes
 spx <- hrdf_spec$freq/del
 spy <- 2*hrdf_spec$spec
+plot(spy[1:1000]~spx[1:1000],xlab="frequency (Hz)",ylab="spectral density",type="l",col='darkgreen')
+
+hrdf_spec_sen<-spectrum(scaledhrdata1$sentence_sen_mean,plot=FALSE)
+#convert into understandable axes
+spx <- hrdf_spec_sen$freq/del
+spy <- 2*hrdf_spec_sen$spec
+plot(spy[1:1000]~spx[1:1000],xlab="frequency (Hz)",ylab="spectral density",type="l",col='darkgreen')
+
+
+hrdf_spec_fict<-spectrum(fictplot$fictfact,plot=FALSE)
+#convert into understandable axes
+spx <- hrdf_spec_fict$freq/del
+spy <- 2*hrdf_spec_fict$spec
 plot(spy[1:1000]~spx[1:1000],xlab="frequency (Hz)",ylab="spectral density",type="l",col='darkgreen')
 ```
 ```{r}
@@ -566,6 +676,40 @@ library(cowplot)
 plot_grid(fig1,fig2,fig3)
 ```
 
+```{r}
+
+
+# Make the chart
+
+# Libraries
+library(dygraphs)
+library(xts) # To make the convertion data-frame / xts format
+
+
+
+newone$time <- as.numeric(newone$time)
+subset_newone <- newone %>% select(time, meanHR, sentence_sen_mean)
+subset_newone$normal<-fftfilt(rep(1, 10)/10, subset_newone$meanHR)
+subset_newone$meanHR=NULL
+
+p <- dygraph(subset_newone)
+p
+
+#More plots
+subset_newone1 <- newone %>% select(time, meanhrpushed, sentence_sen_mean)
+subset_newone1$pushed<-fftfilt(rep(1, 10)/10, subset_newone1$meanhrpushed)
+subset_newone1$meanhrpushed=NULL
+
+e <- dygraph(subset_newone1)
+e
+#More plots
+fictplot <- fictsubset %>% select(time, `002`, fictfact)
+fictplot$filt002 <- fftfilt(rep(1, 1000)/1000, fictplot$`002`)
+fictplot$`002` <- NULL
+
+q <- dygraph(fictplot)
+q
+```
 
 ## R Markdown
 
